@@ -6,7 +6,7 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    image: odelia-viewer:latest
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
     container_name: odelia-viewer
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf
@@ -26,14 +26,14 @@ services:
   # Orthanc Viewer service (for OHIF to connect to)
   orthanc-viewer:
     build:
-      context: ../../custom/orthanc-routing-example/server
+      context: ./orthanc-routing-example/server
       dockerfile: Dockerfile
-    image: odelia-orthanc-viewer:latest
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-viewer:${TAG:-latest}
     hostname: orthanc-viewer
     container_name: odelia-orthanc-viewer
     volumes:
-      - ../../custom/orthanc-routing-example/server/orthanc.json:/etc/orthanc/orthanc.json:ro
-      - ../../custom/orthanc-routing-example/server/router.py:/python/router.py:ro
+      - ./orthanc-routing-example/server/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./orthanc-routing-example/server/router.py:/python/router.py:ro
       - ./volumes/orthanc-viewer-db/:/var/lib/orthanc/db/
     restart: unless-stopped
     networks:
@@ -51,15 +51,15 @@ services:
   # Orthanc Router service (main PACS)
   orthanc-router:
     build:
-      context: ../../custom/orthanc-routing-example/orthanc-ai-router
+      context: ./orthanc-routing-example/orthanc-ai-router
       dockerfile: Dockerfile
-    image: odelia-orthanc-router:latest
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
     hostname: orthanc-router
     container_name: odelia-orthanc-router
     volumes:
       - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
       - ./volumes/orthanc-router-db/:/var/lib/orthanc/db/
-      - ../../custom/orthanc-routing-example/orthanc-ai-router/server.py:/python/server.py
+      - ./orthanc-routing-example/orthanc-ai-router/server.py:/python/server.py
     restart: unless-stopped
     networks:
       - odelia-network
@@ -82,9 +82,9 @@ services:
   # Breast Cancer Classification Model
   breast-cancer-classification:
     build:
-      context: ../../custom/orthanc-routing-example/MLIntegration/breast-cancer-classification
+      context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
       dockerfile: Dockerfile
-    image: odelia-breast-cancer-classification:latest
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
     container_name: odelia-breast-cancer-classification
     environment:
       ORTHANC_URL: "http://orthanc-router:8042"
