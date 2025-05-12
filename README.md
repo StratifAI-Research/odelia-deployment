@@ -4,13 +4,19 @@
 This repository provides deployment instructions for the Odelia Viewer, a medical imaging platform for Odelia AI integration.
 
 ## Quick Start ⚡
-1. Make sure you have Docker installed on your computer
-2. Open a terminal in the project directory
-3. Run the following command:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Stratifai-Research/odelia-viewer.git
+   cd odelia-viewer
+   ```
+
+2. Make sure you have Docker installed on your computer
+3. Open a terminal in the project directory
+4. Run the following command:
    ```bash
    docker-compose up -d
    ```
-4. Open your web browser and navigate to `http://localhost:80`
+5. Open your web browser and navigate to `http://localhost:80`
 
 ## Architecture Overview 🔄
 The send to AI pipeline consists of the following components:

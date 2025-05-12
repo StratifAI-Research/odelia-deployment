@@ -57,7 +57,7 @@
   "HttpsCACertificates": "",
   "UserMetadata": {},
   "UserContentType": {},
-  "StableAge": 60,
+  "StableAge": 10,
   "StrictAetComparison": false,
   "StoreMD5ForAttachments": true,
   "LimitFindResults": 0,
