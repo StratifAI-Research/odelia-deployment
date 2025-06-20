@@ -6,8 +6,8 @@ This repository provides deployment instructions for the Odelia Viewer, a medica
 ## Quick Start ⚡
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Stratifai-Research/odelia-viewer.git
-   cd odelia-viewer
+   git clone https://github.com/StratifAI-Research/odelia-deployment
+   cd odelia-deployment
    ```
 
 2. Make sure you have Docker installed on your computer
