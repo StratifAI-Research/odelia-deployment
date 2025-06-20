@@ -6,7 +6,7 @@ This repository provides deployment instructions for the Odelia Viewer, a medica
 ## Quick Start ⚡
 1. Clone the repository:
    ```bash
-   git clone https://github.com/StratifAI-Research/odelia-deployment
+   [git clone https://github.com/StratifAI-Research/odelia-deployment](https://github.com/StratifAI-Research/orthanc-routing-example)
    cd odelia-deployment
    ```
 
