@@ -3,9 +3,6 @@ version: '3.8'
 services:
   # OHIF Viewer service (main viewer)
   viewer:
-    build:
-      context: ../../
-      dockerfile: Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
     container_name: odelia-viewer
     volumes:
@@ -53,7 +50,6 @@ services:
     build:
       context: ./orthanc-routing-example/orthanc-ai-router
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
     hostname: orthanc-router
     container_name: odelia-orthanc-router
     volumes:
@@ -84,7 +80,6 @@ services:
     build:
       context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
     container_name: odelia-breast-cancer-classification
     environment:
       ORTHANC_URL: "http://orthanc-router:8042"
