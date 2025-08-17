@@ -26,15 +26,18 @@ services:
   # Orthanc Viewer service (for OHIF to connect to)
   orthanc-viewer:
     build:
-      context: ./orthanc-routing-example/server
+      context: ./orthanc-routing-example/orthanc-viewer
       dockerfile: Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-viewer:${TAG:-latest}
     hostname: orthanc-viewer
     container_name: odelia-orthanc-viewer
     volumes:
-      - ./orthanc-routing-example/server/orthanc.json:/etc/orthanc/orthanc.json:ro
-      - ./orthanc-routing-example/server/router.py:/python/router.py:ro
+      - ./orthanc-routing-example/orthanc-viewer/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./orthanc-routing-example/orthanc-viewer/router.py:/python/router.py:ro
+      - ./orthanc-routing-example/orthanc-viewer/feedback_routes.py:/python/feedback_routes.py:ro
+      - ./orthanc-routing-example/orthanc-viewer/feedback_db.py:/python/feedback_db.py:ro
       - ./volumes/orthanc-viewer-db/:/var/lib/orthanc/db/
+      - ./volumes/feedback-db/:/var/lib/odelia-feedback/
     restart: unless-stopped
     networks:
       - odelia-network
@@ -47,11 +50,13 @@ services:
       - VERBOSE_STARTUP=true
       - ORTHANC__PYTHON_SCRIPT=/python/router.py
       - ORTHANC__PYTHON_VERBOSE=true
+      - ORTHANC_FEEDBACK_DB_DIR=/var/lib/odelia-feedback
+      - ORTHANC_FEEDBACK_ENABLE_WAL=1
 
   # Orthanc Router service (main PACS)
   orthanc-router:
     build:
-      context: ./orthanc-routing-example/orthanc-ai-router
+      context: ./orthanc-routing-example/orthanc-router
       dockerfile: Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
     hostname: orthanc-router
@@ -59,7 +64,7 @@ services:
     volumes:
       - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
       - ./volumes/orthanc-router-db/:/var/lib/orthanc/db/
-      - ./orthanc-routing-example/orthanc-ai-router/server.py:/python/server.py
+      - ./orthanc-routing-example/orthanc-router/server.py:/python/server.py
     restart: unless-stopped
     networks:
       - odelia-network
@@ -94,6 +99,24 @@ services:
       - odelia-network
     ports:
       - '5555:5555'
+
+  # Grafana for feedback analytics (reads SQLite via plugin)
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: odelia-grafana
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_INSTALL_PLUGINS=frser-sqlite-datasource
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./volumes/feedback-db/:/var/lib/odelia-feedback/:ro
+    depends_on:
+      - orthanc-viewer
+    networks:
+      - odelia-network
 
 networks:
   odelia-network:
