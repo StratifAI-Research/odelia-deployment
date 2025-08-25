@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # OHIF Viewer service (main viewer)
+  viewer:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
+    container_name: odelia-viewer
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/app-config.js:/usr/share/nginx/html/app-config.js
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - '80:80'
+    depends_on:
+      - orthanc-viewer
+    networks:
+      - odelia-network
+    environment:
+      - PUBLIC_URL=/
+      - PORT=80
+    user: "nginx:nginx"
+
+  # Orthanc Viewer service (for OHIF to connect to)
+  orthanc-viewer:
+    build:
+      context: ./orthanc-routing-example/server
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-viewer:${TAG:-latest}
+    hostname: orthanc-viewer
+    container_name: odelia-orthanc-viewer
+    volumes:
+      - ./orthanc-routing-example/server/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./orthanc-routing-example/server/router.py:/python/router.py:ro
+      - ./volumes/orthanc-viewer-db/:/var/lib/orthanc/db/
+    restart: unless-stopped
+    networks:
+      - odelia-network
+    ports:
+      - '8000:8042' # HTTP port
+      - '2000:4242' # DICOM port
+    environment:
+      - ORTHANC__NAME=orthanc-viewer
+      - VERBOSE_ENABLED=true
+      - VERBOSE_STARTUP=true
+      - ORTHANC__PYTHON_SCRIPT=/python/router.py
+      - ORTHANC__PYTHON_VERBOSE=true
+
+  # Orthanc Router service (main PACS)
+  orthanc-router:
+    build:
+      context: ./orthanc-routing-example/orthanc-ai-router
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
+    hostname: orthanc-router
+    container_name: odelia-orthanc-router
+    volumes:
+      - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
+      #- ./volumes/orthanc-router-db/:/var/lib/orthanc/db/
+      - ./orthanc-routing-example/orthanc-ai-router/server.py:/python/server.py
+    restart: unless-stopped
+    networks:
+      - odelia-network
+    ports:
+      - '4242:4242' # DICOM port
+      - '8042:8042' # HTTP port
+    environment:
+      - ORTHANC__NAME=orthanc-router
+      - VERBOSE_ENABLED=true
+      - VERBOSE_STARTUP=true
+      - ORTHANC__PYTHON_SCRIPT=/python/server.py
+      - ORTHANC__PYTHON_VERBOSE=true
+      - MODEL_BACKEND_URL=http://breast-cancer-classification:5555
+      - AI_TEXT=PROCESSED BY AI MODEL
+      - AI_COLOR=blue
+      - AI_NAME=Breast Cancer Classification Model
+    depends_on:
+      - breast-cancer-classification
+
+  # Breast Cancer Classification Model
+  breast-cancer-classification:
+    build:
+      context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
+    container_name: odelia-breast-cancer-classification
+    environment:
+      ORTHANC_URL: "http://orthanc-router:8042"
+      IMAGE_FOLDER: "./images"
+      #MODEL_PATH: "./models/resnet18_abrv_b=32_split0-0.pth"
+    networks:
+      - odelia-network
+    ports:
+      - '5555:5555'
+
+networks:
+  odelia-network:
+    driver: bridge
