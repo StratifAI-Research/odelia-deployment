@@ -3,15 +3,12 @@ version: '3.8'
 services:
   # OHIF Viewer service (main viewer)
   viewer:
-    build:
-      context: ../../
-      dockerfile: Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
     container_name: odelia-viewer
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf
       - ./config/app-config.js:/usr/share/nginx/html/app-config.js
- #     - ./logs/nginx:/var/log/nginx
+#      - ./logs/nginx:/var/log/nginx
     ports:
       - '80:80'
     depends_on:
@@ -58,7 +55,6 @@ services:
     build:
       context: ./orthanc-routing-example/orthanc-router
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
     hostname: orthanc-router
     container_name: odelia-orthanc-router
     volumes:
@@ -89,7 +85,6 @@ services:
     build:
       context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
     container_name: odelia-breast-cancer-classification
     environment:
       ORTHANC_URL: "http://orthanc-router:8042"
