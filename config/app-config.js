@@ -1,6 +1,6 @@
 /** @type {AppTypes.Config} */
 window.config = {
-  orthancUrl: 'http://localhost:45821',
+  //orthancUrl: 'http://localhost:45821',
   routerBasename: '/',
   showStudyList: true,
   extensions: [],

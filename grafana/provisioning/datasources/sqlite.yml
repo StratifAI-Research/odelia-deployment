@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: Odelia Feedback SQLite
+    uid: odelia-sqlite
+    type: frser-sqlite-datasource
+    access: proxy
+    isDefault: true
+    editable: true
+    jsonData:
+      # Use read-only immutable URI to avoid WAL files from Grafana
+      path: "file:/var/lib/odelia-feedback/feedback.sqlite?mode=ro"
