@@ -9,4 +9,4 @@ datasources:
     editable: true
     jsonData:
       # Use read-only immutable URI to avoid WAL files from Grafana
-      path: "file:/var/lib/odelia-feedback/feedback.sqlite?mode=ro"
+      path: "file:/var/lib/odelia-feedback/feedback.sqlite"

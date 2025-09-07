@@ -1,285 +1,149 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "odelia-sqlite"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 5,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "odelia-sqlite"
-          },
-          "queryText": "SELECT * from feedback_final\nJOIN ai_result_ref WHERE\nai_result_ref.id == feedback_final.ai_result_id\n\n",
-          "queryType": "table",
-          "rawQueryText": "SELECT * from feedback_final\nJOIN ai_result_ref WHERE\nai_result_ref.id == feedback_final.ai_result_id\n\n",
-          "refId": "A",
-          "timeColumns": [
-            "created_at"
-          ]
-        }
-      ],
-      "title": "Panel Title",
-      "type": "table"
-    },
-    {
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "id": 4,
-      "title": "Row title",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "odelia-sqlite"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 9
-      },
-      "id": 1,
+      "type": "stat",
+      "title": "Total submissions",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "sum"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
       },
-      "pluginVersion": "11.1.0",
       "targets": [
         {
-          "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "odelia-sqlite"
-          },
-          "format": "table",
-          "queryText": "SELECT CAST(strftime('%s', 'now', '-1 minute') as INTEGER) as time, 4 as value \nWHERE time >= $__from / 1000 and time < $__to / 1000",
-          "queryType": "table",
-          "rawQueryText": "SELECT CAST(strftime('%s', 'now', '-1 minute') as INTEGER) as time, 4 as value \nWHERE time >= $__from / 1000 and time < $__to / 1000",
-          "rawSql": "SELECT COUNT(*) as n FROM feedback_final",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "format": "table",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+          "rawSql": "SELECT COUNT(*) AS total\nFROM feedback_event e\nJOIN ai_result_ref r ON r.id = e.ai_result_id\nWHERE e.created_at >= '${__from:date:iso}'\n  AND e.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE e.user_id='${user}' END);\n-- ${__to}"
         }
       ],
-      "title": "Total Submissions",
-      "type": "stat"
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] }
     },
     {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 18,
-        "x": 0,
-        "y": 13
-      },
-      "id": 3,
+      "type": "stat",
+      "title": "Unique submissions (latest per user × result)",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "odelia-sqlite"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT CAST(strftime('%s', created_at) AS INTEGER) AS time, COUNT(*) AS value FROM feedback_final GROUP BY 1 ORDER BY 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+          "rawSql": "SELECT COUNT(*) AS unique_total\nFROM v_feedback_current c\nJOIN ai_result_ref r ON r.id = c.ai_result_id\nWHERE c.created_at >= '${__from:date:iso}'\n  AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END);\n-- ${__to}"
         }
       ],
-      "title": "Submissions over time",
-      "type": "timeseries"
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] }
+    },
+    {
+      "type": "barchart",
+      "title": "Left side verdicts",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 6 },
+      "options": {
+        "orientation": "auto",
+        "legend": { "showLegend": false },
+        "barWidth": 0.97,
+        "stacking": "none",
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+          "rawSql": "SELECT 'agree' AS verdict, COUNT(*) AS n\nFROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_L=1\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END)\nUNION ALL\nSELECT 'unsure', COUNT(*) FROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_L=0\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END)\nUNION ALL\nSELECT 'disagree', COUNT(*) FROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_L=-1\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END);\n-- ${__to}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars" } }, "overrides": [] }
+    },
+    {
+      "type": "barchart",
+      "title": "Right side verdicts",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 6 },
+      "options": {
+        "orientation": "auto",
+        "legend": { "showLegend": false },
+        "barWidth": 0.97,
+        "stacking": "none",
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+          "rawSql": "SELECT 'agree' AS verdict, COUNT(*) AS n\nFROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_R=1\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END)\nUNION ALL\nSELECT 'unsure', COUNT(*) FROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_R=0\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END)\nUNION ALL\nSELECT 'disagree', COUNT(*) FROM v_feedback_current c JOIN ai_result_ref r ON r.id=c.ai_result_id\nWHERE c.verdict_R=-1\n  AND c.created_at >= '${__from:date:iso}' AND c.created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE r.model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE c.user_id='${user}' END);\n-- ${__to}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars" } }, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "All submissions (history)",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 16 },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+          "rawSql": "SELECT id, study_uid, model_name, model_version, result_ts, user_id, verdict_L, verdict_R, created_at, submission_kind\nFROM v_feedback_history_denorm\nWHERE created_at >= '${__from:date:iso}'\n  AND created_at <= '${__to:date:iso}'\n  AND (CASE WHEN '${model}'='All' OR '${model}'='' THEN 1 ELSE model_name='${model}' END)\n  AND (CASE WHEN '${user}'='All' OR '${user}'='' THEN 1 ELSE user_id='${user}' END)\nORDER BY created_at DESC, id DESC;\n-- ${__to}"
+        }
+      ],
+      "transformations": [],
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] }
     }
   ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "tags": [
-    "feedback"
-  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["odelia", "sqlite"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "model",
+        "type": "query",
+        "hide": 0,
+        "label": "Model",
+        "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+        "query": "SELECT DISTINCT model_name AS __text, model_name AS __value FROM ai_result_ref ORDER BY 1;",
+        "includeAll": true,
+        "allValue": "All",
+        "refresh": 2,
+        "multi": false,
+        "current": { "selected": true, "text": "All", "value": "All" }
+      },
+      {
+        "name": "user",
+        "type": "query",
+        "hide": 0,
+        "label": "User",
+        "datasource": { "type": "frser-sqlite-datasource", "uid": "odelia-sqlite" },
+        "query": "SELECT DISTINCT user_id AS __text, user_id AS __value FROM feedback_event ORDER BY 1;",
+        "includeAll": true,
+        "allValue": "All",
+        "refresh": 2,
+        "multi": false,
+        "current": { "selected": true, "text": "All", "value": "All" }
+      }
+    ]
   },
-  "time": {
-    "from": "now-7d",
-    "to": "now"
-  },
+  "time": { "from": "now-30d", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Odelia Feedback",
-  "uid": "ceusxnha759tsf",
-  "version": 1,
-  "weekStart": ""
+  "title": "ODELIA Feedback Overview",
+  "uid": "odelia-feedback",
+  "version": 2
 }
