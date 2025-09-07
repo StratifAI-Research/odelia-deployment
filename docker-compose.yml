@@ -101,13 +101,14 @@ services:
     container_name: odelia-grafana
     ports:
       - '3000:3000'
+    user: "0:0"                          # run as root
     environment:
       - GF_INSTALL_PLUGINS=frser-sqlite-datasource
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=odelia
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./volumes/feedback-db/:/var/lib/odelia-feedback/:ro
+      - ./volumes/feedback-db/:/var/lib/odelia-feedback/
     depends_on:
       - orthanc-viewer
     networks:
