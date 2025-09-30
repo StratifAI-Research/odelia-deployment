@@ -54,6 +54,20 @@ window.config = {
   httpErrorHandler: error => {
     console.warn(`HTTP Error Handler (status: ${error.status})`, error);
   },
+  oidc: [
+    {
+      authority: '/keycloak/realms/ohif',
+      client_id: 'ohif_viewer',
+      redirect_uri: '/callback',
+      scope: 'openid profile email',
+      post_logout_redirect_uri: '/',
+      // Use Authorization Code Flow (recommended)
+      response_type: 'code',
+      useAuthorizationCodeFlow: true,
+      // Optional niceties
+      automaticSilentRenew: true,
+      revokeAccessTokenOnSignout: true
+    }],
 };
 // Add global debug logging
 console.log('OHIF Viewer Configuration:', window.config);
