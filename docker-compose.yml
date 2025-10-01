@@ -6,7 +6,7 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:su${TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
     container_name: odelia-viewer
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf
@@ -60,7 +60,6 @@ services:
     build:
       context: ./orthanc-routing-example/orthanc-router
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
     hostname: orthanc-router
     container_name: odelia-orthanc-router
     volumes:
@@ -91,7 +90,6 @@ services:
     build:
       context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
     container_name: odelia-breast-cancer-classification
     environment:
       ORTHANC_URL: "http://orthanc-router:8042"
