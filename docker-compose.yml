@@ -6,7 +6,7 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:${TAG:-latest}
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-viewer:su${TAG:-latest}
     container_name: odelia-viewer
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf
