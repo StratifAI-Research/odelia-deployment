@@ -73,12 +73,18 @@ The send to AI pipeline consists of the following components:
 ## Directory Structure 📁
 The deployment uses the following structure:
 ```
-odelia-viewer/
-├── config/           # Configuration files
-│   ├── nginx.conf    # Web server settings
-│   └── app-config.js # Viewer settings
-├── logs/            # System logs
-└── volumes/         # Storage for medical images
+custom/deploy/
+├── docker-compose.yml
+├── config/                         # Deployment configuration
+│   ├── app-config.js               # OHIF viewer settings (OIDC, DICOMWeb)
+│   ├── nginx.conf                  # Nginx reverse proxy
+│   ├── ohif-keycloak-realm.json    # Keycloak realm import (ohif)
+│   ├── orthanc-router.json         # Orthanc router config
+├── grafana/
+│   └── provisioning/...
+└── volumes/                        # Persistent data volumes
+    ├── orthanc-viewer-db/
+    └── feedback-db/
 ```
 
 ## Configuration ⚙️
