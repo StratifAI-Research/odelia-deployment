@@ -1,7 +1,7 @@
 /** @type {AppTypes.Config} */
 window.config = {
   //orthancUrl: 'http://localhost:45821',
-  routerBasename: '/',
+  routerBasename: '/viewer',
   showStudyList: true,
   extensions: [],
   modes: [],
@@ -58,14 +58,13 @@ window.config = {
     {
       authority: '/keycloak/realms/ohif',
       client_id: 'ohif_viewer',
-      redirect_uri: '/callback',
+      redirect_uri: '/viewer/callback',
       scope: 'openid profile email',
-      post_logout_redirect_uri: '/',
-      // Use Authorization Code Flow (recommended)
+      post_logout_redirect_uri: '/viewer/',
       response_type: 'code',
-      useAuthorizationCodeFlow: true,
-      // Optional niceties
-      automaticSilentRenew: true,
+      // Disable features that cause Firefox rate limiting
+      automaticSilentRenew: false,
+      monitorSession: false,
       revokeAccessTokenOnSignout: true
     }],
 };

@@ -688,7 +688,8 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "2Xtlde7aozdkzzYHdIxQNfPDr0wNPTgg",
       "redirectUris": [
-        "tr://localhost:8081/callback"
+        "http://localhost:8081/viewer/callback",
+        "http://localhost:8081/viewer/*"
       ],
       "webOrigins": [
         "http://localhost:8081"
@@ -700,7 +701,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "publicClient": false,
+      "publicClient": true,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {

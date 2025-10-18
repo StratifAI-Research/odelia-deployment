@@ -137,20 +137,20 @@ services:
       KC_DB_PASSWORD: password
       KC_HOSTNAME_ADMIN_URL: http://localhost:8081/keycloak/
       KC_HOSTNAME_URL: http://localhost:8081/keycloak/
-      KC_HOSTNAME_STRICT_BACKCHANNEL: true
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
       KC_PROXY: edge
       KC_PROXY_HEADERS: xforwarded
       KEYCLOAK_JDBC_PARAMS: connectTimeout=40000
       KC_LOG_LEVEL: INFO
-      KC_HOSTNAME_DEBUG: true
+      KC_HOSTNAME_DEBUG: "true"
       # added later
-      PROXY_ADDRESS_FORWARDING: true
+      PROXY_ADDRESS_FORWARDING: "true"
     ports:
       - 8080:8080
     depends_on:
