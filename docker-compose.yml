@@ -78,10 +78,13 @@ services:
       - VERBOSE_STARTUP=true
       - ORTHANC__PYTHON_SCRIPT=/python/server.py
       - ORTHANC__PYTHON_VERBOSE=true
+      # Switch between AI models by changing MODEL_BACKEND_URL:
+      # - Breast Cancer: http://breast-cancer-classification:5555
+      # - MST Classifier: http://mst-classifier:5556
       - MODEL_BACKEND_URL=http://breast-cancer-classification:5555
       - AI_TEXT=PROCESSED BY AI MODEL
       - AI_COLOR=blue
-      - AI_NAME=Breast Cancer Classification Model
+      - AI_NAME=Model
     depends_on:
       - breast-cancer-classification
 
@@ -100,6 +103,23 @@ services:
       - odelia-network
     ports:
       - '5555:5555'
+
+  # MST Classification Model
+  mst-classifier:
+    build:
+      context: ./orthanc-routing-example/MLIntegration/MST-classification
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-mst-classifier:${TAG:-latest}
+    container_name: odelia-mst-classifier
+    environment:
+      ORTHANC_URL: "http://orthanc-router:8042"
+      IMAGE_FOLDER: "./images"
+      MODEL_PATH: "./mst_model"
+      HF_TOKEN: "HF_TOKEN"
+    networks:
+      - odelia-network
+    ports:
+      - '5556:5556'
 
   # Grafana for feedback analytics (reads SQLite via plugin)
   grafana:
