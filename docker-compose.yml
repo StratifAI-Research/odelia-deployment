@@ -84,9 +84,37 @@ services:
       - MODEL_BACKEND_URL=http://breast-cancer-classification:5555
       - AI_TEXT=PROCESSED BY AI MODEL
       - AI_COLOR=blue
-      - AI_NAME=Model
+      - AI_NAME=Cancer classification model
     depends_on:
       - breast-cancer-classification
+
+  # Orthanc Router service for MST AI model
+  orthanc-router-mst:
+    build:
+      context: ./orthanc-routing-example/orthanc-router
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
+    hostname: orthanc-router-mst
+    container_name: odelia-orthanc-router-mst
+    volumes:
+      - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
+      - ./volumes/orthanc-router-mst-db/:/var/lib/orthanc/db/
+      - ./orthanc-routing-example/orthanc-router/server.py:/python/server.py
+    restart: unless-stopped
+    networks:
+      - odelia-network
+    ports:
+      - '4243:4242' # DICOM port (avoid conflict)
+      - '8043:8042' # HTTP port (avoid conflict)
+    environment:
+      - ORTHANC__NAME=orthanc-router-mst
+      - VERBOSE_ENABLED=true
+      - VERBOSE_STARTUP=true
+      - ORTHANC__PYTHON_SCRIPT=/python/server.py
+      - ORTHANC__PYTHON_VERBOSE=true
+      - MODEL_BACKEND_URL=http://mst-classifier:5556
+    depends_on:
+      - mst-classifier
 
   # Breast Cancer Classification Model
   breast-cancer-classification:
