@@ -51,6 +51,19 @@ window.config = {
       },
     }
   ],
+  // Preconfigured AI endpoints
+  aiEndpoints: [
+    {
+      id: 'default-ai-server',
+      name: 'Simple classification model',
+      url: 'http://orthanc-router:8042/dicom-web',
+    },
+    {
+      id: 'mst-ai',
+      name: 'MST AI model',
+      url: 'http://orthanc-router-mst:8042/dicom-web',
+    },
+  ],
   httpErrorHandler: error => {
     console.warn(`HTTP Error Handler (status: ${error.status})`, error);
   },
