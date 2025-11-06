@@ -55,7 +55,7 @@ window.config = {
   aiEndpoints: [
     {
       id: 'default-ai-server',
-      name: 'Simple classification model',
+      name: 'Classification model',
       url: 'http://orthanc-router:8042/dicom-web',
     },
     {
