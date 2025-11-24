@@ -12,6 +12,15 @@ This repository provides deployment instructions for the Odelia Viewer, a medica
 
 2. Make sure you have Docker installed on your computer
 3. Open a terminal in the project directory
+
+> **Note:** When running for the first time, you may see warnings about not being able to pull images for:
+> - `odelia-orthanc-router`
+> - `odelia-orthanc-viewer`
+> - `odelia-breast-cancer-classification`
+> - `odelia-mst-classifier`
+>
+> This is normal - these images will be built from source automatically.
+
 4. Run the following command:
    ```bash
    docker compose up -d
@@ -120,6 +129,58 @@ Troubleshooting:
 - "invalid parameter: redirect_uri": fix Redirect URIs/Web Origins in the `ohif_viewer` client.
 - CORS errors: ensure Web Origins matches your scheme + domain.
 - References: [User Account Control](https://docs.ohif.org/deployment/user-account-control/), [Authorization (OIDC)](https://docs.ohif.org/deployment/authorization/)
+
+</details>
+
+## AI Model Configuration 🤖
+<details>
+<summary>Configure Hugging Face access for MST classifier model</summary>
+
+The MST Classification model requires authentication to access models from Hugging Face. This is configured via the `HF_TOKEN` environment variable in the `mst-classifier` service (line 146 in `docker-compose.yml`).
+
+### Obtaining a Hugging Face Token
+
+1. Create a free account at [https://huggingface.co](https://huggingface.co) if you don't have one
+2. Navigate to Settings → Access Tokens
+3. Click "Create new token"
+4. Give it a name (e.g., "odelia-mst") and select "Read" access
+5. Copy the generated token
+
+### Required Model Licenses
+
+Before using the MST classifier, you **must** accept the licenses for the following models:
+
+1. **ODELIA-AI/MST** - [https://huggingface.co/ODELIA-AI/MST](https://huggingface.co/ODELIA-AI/MST)
+   - Research-only use, non-commercial
+   - You must agree to the Model Usage Agreement
+   - Log in to Hugging Face and accept the conditions on the model page
+
+2. **DINOv3** (required dependency) - [https://huggingface.co/facebook/dinov3-vits16-pretrain-lvd1689m](https://huggingface.co/facebook/dinov3-vits16-pretrain-lvd1689m)
+   - You must accept the DINOv3 License terms
+   - Log in to Hugging Face and accept the conditions on the model page
+
+### Configuring the Token
+
+**Option 1: Edit docker-compose.yml (Recommended)**
+Replace the placeholder in `docker-compose.yml`:
+```yaml
+environment:
+  HF_TOKEN: "your_actual_token_here"  # Replace HF_TOKEN with your token
+```
+
+**Option 2: Environment Variable**
+```bash
+export HF_TOKEN=your_actual_token_here
+docker compose up -d
+```
+
+> ⚠️ **Security Warning:** Never commit your actual token to git. Consider using a `.env` file (add it to `.gitignore`) or environment variables for sensitive tokens.
+
+### Note
+
+- The default **breast-cancer-classification** model does not require a Hugging Face token
+- The `HF_TOKEN` is only needed if you're using the **MST classifier** model
+- Both models are available in the deployment and can be selected in the viewer
 
 </details>
 
