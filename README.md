@@ -72,12 +72,44 @@ The send to AI pipeline consists of the following components:
 ## Use Cases 💡
 <details>
 <summary>AI Routing</summary>
-[Content to be added]
+
+Send studies to AI models for analysis using the **AI Analysis** panel (right sidebar):
+
+1. **Open a study** - The panel automatically detects the active study
+
+   ![AI Analysis Panel](docs/images/ai-analysis-panel.jpg)
+
+2. **Select series** - Choose which series to analyze and click "Next"
+
+3. **Select AI model** and click "Send to AI"
+   - Classification model (breast cancer)
+   - MST AI model (requires HF_TOKEN)
+
+   ![Select AI Model](docs/images/select-ai-model.jpg)
+
+4. **View results** - AI-processed studies appear in the study list with annotations
+
 </details>
 
 <details>
 <summary>Uploading Images to Orthanc</summary>
-[Content to be added]
+
+Upload DICOM images using one of these methods:
+
+**Method 1: OHIF Viewer** (Recommended)
+- Open viewer at `http://localhost:8081`
+- Use the upload button to drag and drop DICOM files
+
+![Orthanc Upload](docs/images/orthanc-upload.jpg)
+
+**Method 2: Orthanc Web Interface**
+- Access `http://localhost:8000`
+- Click "Upload" and select DICOM files (`.dcm`)
+
+**Method 3: DICOM Send (C-STORE)**
+- Configure your DICOM source: AE Title `ORTHANC-VIEWER`, Host `localhost`, Port `2000`
+- Send studies from your PACS workstation
+
 </details>
 
 ## Directory Structure 📁
