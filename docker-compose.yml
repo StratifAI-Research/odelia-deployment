@@ -37,6 +37,7 @@ services:
       - ./orthanc-routing-example/orthanc-viewer/router.py:/python/router.py:ro
       - ./orthanc-routing-example/orthanc-viewer/feedback_routes.py:/python/feedback_routes.py:ro
       - ./orthanc-routing-example/orthanc-viewer/feedback_db.py:/python/feedback_db.py:ro
+      - ./orthanc-routing-example/orthanc-viewer/ups:/python/ups:ro
       - ./volumes/orthanc-viewer-db/:/var/lib/orthanc/db/
       - ./volumes/feedback-db/:/var/lib/odelia-feedback/
     restart: unless-stopped
@@ -119,14 +120,14 @@ services:
   # Breast Cancer Classification Model
   breast-cancer-classification:
     build:
-      context: ./orthanc-routing-example/MLIntegration/breast-cancer-classification
-      dockerfile: Dockerfile
+      context: ./orthanc-routing-example/MLIntegration
+      dockerfile: breast-cancer-classification/Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
     container_name: odelia-breast-cancer-classification
     environment:
       ORTHANC_URL: "http://orthanc-router:8042"
-      IMAGE_FOLDER: "./images"
-      MODEL_PATH: "./models/resnet18_abrv_b=32_split0-0.pth"
+      IMAGE_FOLDER: "/app/bc-service/images"
+      MODEL_PATH: "/app/bc-service/models/resnet18_abrv_b=32_split0-0.pth"
     networks:
       - odelia-network
     ports:
@@ -135,14 +136,14 @@ services:
   # MST Classification Model
   mst-classifier:
     build:
-      context: ./orthanc-routing-example/MLIntegration/MST-classification
-      dockerfile: Dockerfile
+      context: ./orthanc-routing-example/MLIntegration
+      dockerfile: MST-classification/Dockerfile
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-mst-classifier:${TAG:-latest}
     container_name: odelia-mst-classifier
     environment:
-      ORTHANC_URL: "http://orthanc-router:8042"
-      IMAGE_FOLDER: "./images"
-      MODEL_PATH: "./mst_model"
+      ORTHANC_URL: "http://orthanc-router-mst:8042"
+      IMAGE_FOLDER: "/app/mst-service/images"
+      MODEL_PATH: "/app/mst-service/mst_model"
       HF_TOKEN: "HF_TOKEN"
     networks:
       - odelia-network
