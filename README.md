@@ -34,7 +34,7 @@ Follow these steps for a complete local deployment:
     > **Note:** Initial run warnings about not being able to pull images for `odelia-orthanc-router`, `odelia-orthanc-viewer`, and the AI models (`odelia-breast-cancer-classification`, `odelia-mst-classifier`) are **normal**. These images will be built automatically from source.
 
 3.  **Access the Viewer:**
-    Open your web browser and navigate to:
+    Open your web browser and navigate to (use viewer/viewer as default credentials):
     ```
     http://localhost:8081
     ```
