@@ -150,6 +150,86 @@ services:
     ports:
       - '5556:5556'
 
+  # Orthanc Router service for MedGemma AI model
+  orthanc-router-medgemma:
+    build:
+      context: ./orthanc-routing-example/orthanc-router
+      dockerfile: Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
+    hostname: orthanc-router-medgemma
+    container_name: odelia-orthanc-router-medgemma
+    volumes:
+      - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
+      - ./volumes/orthanc-router-medgemma-db/:/var/lib/orthanc/db/
+      - ./orthanc-routing-example/orthanc-router/server.py:/python/server.py
+    restart: unless-stopped
+    networks:
+      - odelia-network
+    ports:
+      - '4244:4242' # DICOM port (avoid conflict)
+      - '8044:8042' # HTTP port (avoid conflict)
+    environment:
+      - ORTHANC__NAME=orthanc-router-medgemma
+      - VERBOSE_ENABLED=true
+      - VERBOSE_STARTUP=true
+      - ORTHANC__PYTHON_SCRIPT=/python/server.py
+      - ORTHANC__PYTHON_VERBOSE=true
+      - MODEL_BACKEND_URL=http://medgemma-mri:5557
+      - AI_NAME=MedGemma Vision-Language Model
+    depends_on:
+      - medgemma-mri
+
+  # MedGemma MRI Classification Model
+  medgemma-mri:
+    build:
+      context: ./orthanc-routing-example/MLIntegration
+      dockerfile: medgemma-mri/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-medgemma-mri:${TAG:-latest}
+    container_name: odelia-medgemma-mri
+    environment:
+      ORTHANC_URL: "http://orthanc-router-medgemma:8042"
+      IMAGE_FOLDER: "/app/medgemma-service/images"
+      HF_TOKEN: "HF_TOKEN"
+      NUM_SLICES: "100"
+      MAX_NEW_TOKENS: "500"
+      TORCH_DTYPE: "bfloat16"
+    networks:
+      - odelia-network
+    ports:
+      - '5557:5557'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Chat Middleware - WebSocket-based chat for DICOM study analysis
+  chat-middleware:
+    build:
+      context: ./orthanc-routing-example/MLIntegration
+      dockerfile: chat-middleware/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-chat-middleware:${TAG:-latest}
+    container_name: odelia-chat-middleware
+    environment:
+      # Point to external Ollama instance on host
+      OLLAMA_URL: "http://host.docker.internal:11434"
+      OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:Q4_K_S"
+      OLLAMA_NUM_CTX: "32768"  # 32k context window
+      WADO_BASE_URL: "http://orthanc-viewer:8042/dicom-web"
+      NUM_SLICES: "5"
+      MAX_CACHE_ENTRIES: "100"
+    networks:
+      - odelia-network
+    ports:
+      - '5560:5560'
+    depends_on:
+      - orthanc-viewer
+    # Enable host.docker.internal on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   # Grafana for feedback analytics (reads SQLite via plugin)
   grafana:
     image: grafana/grafana:11.1.0
