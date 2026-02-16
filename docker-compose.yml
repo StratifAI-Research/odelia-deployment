@@ -146,7 +146,7 @@ services:
       ORTHANC_URL: "http://orthanc-router-mst:8042"
       IMAGE_FOLDER: "/app/mst-service/images"
       MODEL_PATH: "/app/mst-service/mst_model"
-      HF_TOKEN: "HF_TOKEN"
+      #HF_TOKEN: "HF_TOKEN"
     networks:
       - odelia-network
     ports:
