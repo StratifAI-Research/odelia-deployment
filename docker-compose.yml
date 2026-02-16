@@ -41,6 +41,8 @@ services:
       - ./volumes/orthanc-viewer-db/:/var/lib/orthanc/db/
       - ./volumes/feedback-db/:/var/lib/odelia-feedback/
     restart: unless-stopped
+    depends_on:
+      - keycloak
     networks:
       - odelia-network
     ports:
@@ -215,8 +217,8 @@ services:
     environment:
       # Point to external Ollama instance on host
       OLLAMA_URL: "http://host.docker.internal:11434"
-      OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:Q4_K_S"
-      OLLAMA_NUM_CTX: "32768"  # 32k context window
+      OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:F16"
+      OLLAMA_NUM_CTX: "128000"  # 128k context window
       WADO_BASE_URL: "http://orthanc-viewer:8042/dicom-web"
       NUM_SLICES: "5"
       MAX_CACHE_ENTRIES: "100"

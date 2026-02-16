@@ -110,7 +110,138 @@ Please see the documentation: [Adding New Users](docs/adding_new_users.md)
 
 ---
 
-## Architecture Components 🔄
+## Updating 🔄
+
+This section covers how to update an existing Odelia Viewer deployment to the latest version.
+
+<details>
+<summary>View Full Update Procedure</summary>
+
+#### 1. Back Up Persistent Data
+
+Before updating, back up your persistent data. The `volumes/` directory contains DICOM images and the feedback database. The `postgres_data` named Docker volume holds the Keycloak database.
+
+```bash
+# Back up the volumes directory
+cp -r volumes/ volumes-backup-$(date +%F)/
+
+# Back up the Keycloak Postgres database
+docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres-backup.tar.gz /data
+```
+
+#### 2. Stop Running Containers
+
+```bash
+docker compose down
+```
+
+> **Note:** `docker compose down` does **not** delete volumes. Your data remains intact.
+
+#### 3. Pull Latest Deployment Repository
+
+```bash
+git pull origin main
+```
+
+Replace `main` with the branch you are tracking if different.
+
+#### 4. Update Submodules
+
+The deployment uses **nested submodules** (two levels deep), so the `--recursive` flag is required:
+
+```bash
+git submodule update --init --recursive
+```
+
+This updates:
+- `orthanc-routing-example/` — Orthanc router and viewer configurations
+- `orthanc-routing-example/MLIntegration/` — all AI model services (breast-cancer-classification, MST, MedGemma, chat-middleware)
+
+#### 5. Review Configuration Changes
+
+If you have customized any configuration files, check for upstream changes before restarting:
+
+```bash
+git diff HEAD@{1} -- docker-compose.yml config/
+```
+
+Files to watch for changes:
+- `docker-compose.yml` — new environment variables, ports, or services
+- `config/nginx.conf` — reverse proxy routes
+- `config/app-config.js` — OHIF viewer settings
+- `config/orthanc-router.json` — Orthanc routing configuration
+
+> **Important:** Re-apply any custom settings (e.g., `HF_TOKEN`, production domain URLs) after pulling, as they may be overwritten by the update.
+
+#### 6. Rebuild Docker Images
+
+Rebuild all images that are built from source:
+
+```bash
+docker compose build --no-cache
+```
+
+Or rebuild only specific services:
+
+```bash
+docker compose build <service-name>
+```
+
+**Services built from source** (require rebuild): `orthanc-viewer`, `orthanc-router`, `orthanc-router-mst`, `orthanc-router-medgemma`, `breast-cancer-classification`, `mst-classifier`, `medgemma-mri`, `chat-middleware`
+
+**Pre-built images** (update via pull): `viewer`, `grafana`, `keycloak`, `postgres`
+
+```bash
+docker compose pull viewer grafana keycloak postgres
+```
+
+#### 7. Update Ollama Model (if applicable)
+
+If you use the Chat AI feature, update the Ollama model on the host machine:
+
+```bash
+ollama pull thiagomoraes/medgemma-1.5-4b-it:F16
+```
+
+#### 8. Start Services
+
+```bash
+docker compose up -d
+```
+
+#### 9. Verify Deployment
+
+```bash
+# Check all containers are running
+docker compose ps
+
+# Check logs for errors
+docker compose logs --tail=50
+```
+
+Then open `http://localhost:8081` in your browser to confirm the viewer loads correctly.
+
+</details>
+
+<details>
+<summary>Quick-Reference Commands</summary>
+
+For experienced users, here is the condensed update sequence:
+
+```bash
+docker compose down
+git pull origin main
+git submodule update --init --recursive
+docker compose build --no-cache
+docker compose up -d
+docker compose ps
+```
+
+</details>
+
+---
+
+## Architecture Components 🏗️
 The Odelia Viewer deployment consists of several interconnected components, each serving a specific purpose:
 
 | Component | Purpose |
@@ -178,6 +309,98 @@ The **MST Classification model** requires a Hugging Face token for access. The d
         docker compose up -d
         ```
     > ⚠️ **Security Warning:** Never commit your actual token to a version control system like Git. Use environment variables or a `.env` file that is in your `.gitignore`.
+</details>
+
+### Ollama + MedGemma Setup (Chat AI) 💬
+<details>
+<summary>View Ollama Installation and MedGemma Configuration</summary>
+
+The **Chat AI** panel in the viewer uses a local [Ollama](https://ollama.com/) instance running the **MedGemma** vision-language model. Ollama runs on the **host machine** (not inside Docker) and is accessed by the `chat-middleware` container via `host.docker.internal`.
+
+#### 1. Install Ollama
+
+**Linux:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**macOS / Windows:**
+Download the installer from [https://ollama.com/download](https://ollama.com/download).
+
+Verify the installation:
+```bash
+ollama --version
+```
+
+#### 2. Pull the MedGemma Model
+
+Pull the MedGemma model that the chat middleware expects by default:
+```bash
+ollama pull thiagomoraes/medgemma-1.5-4b-it:F16
+```
+
+> **Note:** This model is ~8 GB. Ensure you have sufficient disk space and a GPU with enough VRAM for acceptable performance. Smaller quantizations (e.g., `Q8_0`, `Q4_K_M`) are available if resources are limited — adjust the `OLLAMA_MODEL` variable accordingly.
+
+Verify the model is available:
+```bash
+ollama list
+```
+
+#### 3. Start Ollama
+
+Make sure the Ollama server is running before starting the Docker stack:
+```bash
+ollama serve
+```
+
+By default, Ollama listens on `http://localhost:11434`. You can confirm it is running:
+```bash
+curl http://localhost:11434/api/tags
+```
+
+#### 4. Docker Compose Configuration
+
+The `chat-middleware` service in `docker-compose.yml` is pre-configured to connect to Ollama on the host:
+
+```yaml
+chat-middleware:
+  environment:
+    OLLAMA_URL: "http://host.docker.internal:11434"
+    OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:F16"
+    OLLAMA_NUM_CTX: "128000"  # 128k context window
+    NUM_SLICES: "5"
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+```
+
+**Key variables you may want to adjust:**
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `OLLAMA_URL` | `http://host.docker.internal:11434` | URL of the Ollama API. Change if Ollama runs on a remote machine. |
+| `OLLAMA_MODEL` | `thiagomoraes/medgemma-1.5-4b-it:F16` | Model tag in Ollama. Change if you pulled a different quantization or model. |
+| `OLLAMA_NUM_CTX` | `128000` | Context window size in tokens. Reduce if you run into memory issues. |
+| `NUM_SLICES` | `5` | Number of DICOM slices sent to the model per study for analysis. |
+
+> **Linux note:** The `extra_hosts` mapping (`host.docker.internal:host-gateway`) is required on Linux to allow containers to reach the host network. This is included in the default `docker-compose.yml` and should not be removed.
+
+#### 5. Using a Different Model
+
+To use a different Ollama-compatible model:
+
+1. Pull the desired model:
+    ```bash
+    ollama pull <model_name>:<tag>
+    ```
+2. Update the `OLLAMA_MODEL` variable in `docker-compose.yml`:
+    ```yaml
+    OLLAMA_MODEL: "<model_name>:<tag>"
+    ```
+3. Restart the chat middleware:
+    ```bash
+    docker compose up -d chat-middleware
+    ```
+
 </details>
 
 ---
