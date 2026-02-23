@@ -1,0 +1,88 @@
+# Model Card: MedGemma MRI (Vision-Language Model)
+
+## Model Details
+
+| Field | Value |
+|-------|-------|
+| **Name** | MedGemma MRI Classification |
+| **Architecture** | Vision-Language Model (Google MedGemma 1.5-4B-IT) |
+| **Model ID** | `google/medgemma-1.5-4b-it` |
+| **Task** | 3-class classification per breast: No lesion / Benign / Malignant |
+| **Output** | Bilateral classification with confidence scores (no attention maps) |
+| **Inference mode** | Deterministic (`do_sample=False`), max 500 new tokens |
+| **Source** | [google/medgemma-1.5-4b-it on HuggingFace](https://huggingface.co/google/medgemma-1.5-4b-it) (gated model) |
+| **Service port** | Configured via Docker Compose |
+
+## Intended Use
+
+Research-only analysis of breast MRI using a general-purpose medical vision-language model. The model is prompted to behave as a radiologist. Not approved for clinical decision-making.
+
+## Input Requirements
+
+### Modality & Anatomy
+
+- **Modality:** MRI (breast MRI, single 3D series)
+- **Anatomy:** Breast (the prompt assumes breast MRI — other anatomies will be misclassified)
+
+### Required DICOM Tags
+
+| Tag | Keyword | Required | Purpose |
+|-----|---------|----------|---------|
+| `(0020,000D)` | StudyInstanceUID | Yes | Study-level retrieval |
+| `(0020,000E)` | SeriesInstanceUID | Yes | Series-level retrieval |
+| `(0020,0100)` | TemporalPositionIdentifier | Recommended | Primary tag for temporal phase detection |
+| `(0018,1060)` | TriggerTime | Fallback | Used if TemporalPositionIdentifier is absent |
+| `(0020,1041)` | SliceLocation | Recommended | Primary tag for spatial slice ordering |
+| `(0020,0032)` | ImagePositionPatient | Fallback | Z-coordinate used if SliceLocation is absent |
+| `(0020,0013)` | InstanceNumber | Fallback | Used if both spatial tags are absent |
+| `(7FE0,0010)` | PixelData | Yes | Image data |
+
+### Temporal Handling (4D Series)
+
+- If multiple temporal phases are detected, **only the first temporal position** is used
+- Single-phase series are used as-is
+
+### Slice Extraction
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Number of slices | 5 | Configurable via `NUM_SLICES` env var |
+| Region | Central 60% | Indices 20%–80% of the volume depth |
+| Spacing | Even | Evenly spaced within the selected region |
+
+### Image Preprocessing
+
+1. DICOM volume is read via SimpleITK
+2. 5 evenly-spaced axial slices extracted from the central 60% of the volume
+3. Each slice is normalized using percentile-based windowing (1st–99th percentile) to 0–255
+4. Grayscale is converted to RGB by tripling the channel
+5. Delivered as PIL `Image` objects to the HuggingFace processor
+
+### Prompt Structure
+
+The model receives an interleaved sequence:
+```
+[instruction text] [image1] "SLICE 1" [image2] "SLICE 2" ... [image5] "SLICE 5" [query text]
+```
+
+The instruction prompt sets the role as a radiologist analyzing breast MRI. The query requests a JSON response with bilateral classification (left/right), each with classification, confidence, and reasoning.
+
+## Input Limitations & Failure Modes
+
+| Condition | Behavior |
+|-----------|----------|
+| No `.dcm` files in folder | `ValueError` raised |
+| Volume with fewer slices than `num_slices` | `num_slices` is silently reduced to available count |
+| Missing `SliceLocation` and `ImagePositionPatient` | All slices default to position 0.0 — incorrect volume ordering, **silent corruption** |
+| Missing temporal tags on multi-phase data | All phases merged into one volume — may produce incorrect slice ordering |
+| Non-breast anatomy | Model is prompted for breast MRI — will attempt breast classification on any anatomy, producing **unreliable results** |
+| Model returns malformed JSON | `ResponseParsingError` raised |
+| Model returns invalid classification label | `ResponseParsingError` raised (only "No lesion", "Benign", "Malignant" accepted) |
+
+### Confidence Score Caveat
+
+Confidence scores are **self-reported by the language model**, not derived from calibrated probability distributions. They should not be interpreted as true statistical confidence.
+
+## Authentication
+
+Requires a valid HuggingFace token (`HF_TOKEN` environment variable). The MedGemma license must be accepted at https://huggingface.co/google/medgemma-1.5-4b-it before first use.
