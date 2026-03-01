@@ -403,6 +403,182 @@ To use a different Ollama-compatible model:
 
 </details>
 
+### llama.cpp Alternative Backend (Chat AI) 🦙
+<details>
+<summary>View llama.cpp Setup and Configuration</summary>
+
+[llama.cpp](https://github.com/ggerganov/llama.cpp) is an alternative backend for the Chat AI feature. It runs the same MedGemma model but uses the GGUF format and runs entirely inside Docker — no host-level installation required.
+
+**Why choose llama.cpp over Ollama?**
+* Typically **faster inference** (lower time-to-first-token and higher tokens/sec) on the same hardware.
+* Runs in a Docker container — nothing to install on the host besides the NVIDIA driver.
+* Supports quantized models (Q4, Q8, etc.) for reduced VRAM usage.
+
+**Trade-offs:**
+* You need to download the GGUF model file manually (Ollama handles downloads automatically).
+* Configuration is done via environment variables rather than a CLI tool.
+
+#### 1. Prerequisites
+
+* **NVIDIA GPU** with compatible drivers installed on the host.
+* **NVIDIA Container Toolkit** — required so Docker containers can access the GPU. Follow the official installation guide: [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+  Verify it works:
+  ```bash
+  docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
+  ```
+
+#### 2. Download the Model Files
+
+The Chat AI uses MedGemma 1.5 4B. You need two files — the main model and the vision (multimodal) projector:
+
+```bash
+# Create the models directory
+sudo mkdir -p custom/deploy/volumes/models
+
+# Download the main model (~7.8 GB)
+sudo wget -P custom/deploy/volumes/models/ \
+  https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-BF16.gguf
+
+# Download the multimodal projector (~812 MB)
+sudo wget -P custom/deploy/volumes/models/ \
+  https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF/resolve/main/mmproj-BF16.gguf
+```
+
+> **Disk space:** You need approximately **9 GB** of free space for both files. Smaller quantized models (e.g., `Q8_0` at 4.1 GB, `Q4_K_M` at 2.5 GB) are available from the same repository if space or VRAM is limited.
+
+Verify the files are in place:
+```bash
+ls -lh custom/deploy/volumes/models/
+# Expected output:
+#   medgemma-1.5-4b-it-BF16.gguf   (~7.8G)
+#   mmproj-BF16.gguf                (~812M)
+```
+
+#### 3. Switch from Ollama to llama.cpp
+
+Edit the `chat-middleware` section in `docker-compose.yml`. Change the three highlighted variables:
+
+```yaml
+chat-middleware:
+    environment:
+      OLLAMA_URL: "http://llamacpp-server:8090"          # was: http://host.docker.internal:11434
+      OLLAMA_MODEL: "medgemma-1.5-4b-it-BF16"            # was: thiagomoraes/medgemma-1.5-4b-it:F16
+      BACKEND_TYPE: "llamacpp"                            # was: ollama
+      # ... leave the rest unchanged
+```
+
+Then start both the chat middleware and the llama.cpp server:
+```bash
+docker compose --profile llamacpp up -d chat-middleware llamacpp-server
+```
+
+> **Important:** The `--profile llamacpp` flag is required to start the `llamacpp-server` container. Without it, only the `chat-middleware` will start and it won't be able to reach the llama.cpp server.
+
+Verify both containers are running:
+```bash
+docker compose --profile llamacpp ps
+```
+
+You should see both `odelia-chat-middleware` and `odelia-llamacpp-server` with status `Up`.
+
+#### 4. Switch Back to Ollama
+
+Revert the three variables in `docker-compose.yml` to their original values:
+
+```yaml
+chat-middleware:
+    environment:
+      OLLAMA_URL: "http://host.docker.internal:11434"
+      OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:F16"
+      BACKEND_TYPE: "ollama"
+      # ... leave the rest unchanged
+```
+
+Then restart without the llama.cpp profile:
+```bash
+docker compose down chat-middleware llamacpp-server
+docker compose up -d chat-middleware
+```
+
+#### 5. Configuration Reference
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `BACKEND_TYPE` | `ollama` | Backend to use: `ollama` or `llamacpp`. |
+| `OLLAMA_URL` | `http://host.docker.internal:11434` | URL of the LLM server. For llama.cpp: `http://llamacpp-server:8090`. |
+| `OLLAMA_MODEL` | `thiagomoraes/medgemma-1.5-4b-it:F16` | Model identifier. For llama.cpp: `medgemma-1.5-4b-it-BF16`. |
+| `GGUF_MODEL_FILE` | `medgemma-1.5-4b-it-BF16.gguf` | GGUF model filename inside `volumes/models/`. Only used by `llamacpp-server`. |
+| `MMPROJ_FILE` | `mmproj-BF16.gguf` | Vision projector filename. Only used by `llamacpp-server`. |
+| `LLAMA_CTX_SIZE` | `131072` | Context window size in tokens. Reduce if you run into VRAM issues. |
+| `LLAMA_N_GPU_LAYERS` | `99` | Number of model layers to offload to GPU. `99` means all layers. |
+
+#### 6. Using a Remote llama.cpp Server
+
+The llama.cpp server does not have to run on the same machine. If you have a remote GPU server running `llama-server`, simply point `OLLAMA_URL` to it:
+
+```bash
+# In .env:
+BACKEND_TYPE=llamacpp
+OLLAMA_URL=http://192.168.1.50:8090
+OLLAMA_MODEL=medgemma-1.5-4b-it-BF16
+```
+
+Then start the chat middleware **without** the `llamacpp` profile (since the server is remote):
+```bash
+docker compose up -d chat-middleware
+```
+
+#### 7. Using a Different Quantization
+
+To use a smaller (faster, less VRAM) or larger model variant:
+
+1. Download the desired GGUF from [unsloth/medgemma-1.5-4b-it-GGUF](https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF). For example, `Q8_0` (~4.1 GB):
+    ```bash
+    sudo wget -P custom/deploy/volumes/models/ \
+      https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF/resolve/main/medgemma-1.5-4b-it-Q8_0.gguf
+    ```
+
+2. Set the filename via environment variable:
+    ```bash
+    # In .env:
+    GGUF_MODEL_FILE=medgemma-1.5-4b-it-Q8_0.gguf
+    OLLAMA_MODEL=medgemma-1.5-4b-it-Q8_0
+    ```
+
+3. Restart the llama.cpp server:
+    ```bash
+    docker compose --profile llamacpp up -d llamacpp-server
+    ```
+
+> **Note:** The `mmproj-BF16.gguf` vision projector is the same regardless of which quantization you choose for the main model.
+
+#### 8. Benchmarking Ollama vs llama.cpp
+
+A benchmark script is included to compare performance between backends:
+
+```bash
+# Install the only dependency
+pip install requests
+
+# Run against both backends (requires both to be running)
+python orthanc-routing-example/MLIntegration/chat-middleware/benchmark.py \
+  --ollama http://localhost:11434 \
+  --llamacpp http://localhost:8090 \
+  --show-responses
+
+# With real DICOM images from Orthanc
+python orthanc-routing-example/MLIntegration/chat-middleware/benchmark.py \
+  --ollama http://localhost:11434 \
+  --llamacpp http://localhost:8090 \
+  --series-uid <SeriesInstanceUID> \
+  --show-responses
+```
+
+The script measures time-to-first-token (TTFT), tokens per second, and total generation time across text and multimodal prompts.
+
+</details>
+
 ---
 
 ## Support 🤝
