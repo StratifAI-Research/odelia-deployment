@@ -208,6 +208,8 @@ services:
               capabilities: [gpu]
 
   # Chat Middleware - WebSocket-based chat for DICOM study analysis
+  # Supports two backends: Ollama (default) and llama.cpp (optional).
+  # Override via .env or shell: BACKEND_TYPE=llamacpp OLLAMA_URL=http://llamacpp-server:8090
   chat-middleware:
     build:
       context: ./orthanc-routing-example/MLIntegration
@@ -215,9 +217,9 @@ services:
     image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-chat-middleware:${TAG:-latest}
     container_name: odelia-chat-middleware
     environment:
-      # Point to external Ollama instance on host
-      OLLAMA_URL: "http://host.docker.internal:11434"
-      OLLAMA_MODEL: "thiagomoraes/medgemma-1.5-4b-it:F16"
+      OLLAMA_URL: "${OLLAMA_URL:-http://host.docker.internal:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-thiagomoraes/medgemma-1.5-4b-it:F16}"
+      BACKEND_TYPE: "${BACKEND_TYPE:-ollama}"
       OLLAMA_NUM_CTX: "128000"  # 128k context window
       WADO_BASE_URL: "http://orthanc-viewer:8042/dicom-web"
       NUM_SLICES: "5"
@@ -231,6 +233,42 @@ services:
     # Enable host.docker.internal on Linux
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # llama.cpp server - optional alternative to Ollama for the Chat AI.
+  # Only starts when the "llamacpp" profile is activated:
+  #   docker compose --profile llamacpp up -d llamacpp-server chat-middleware
+  # Requires GGUF model files in ./volumes/models/ (see README for download instructions).
+  llamacpp-server:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    profiles: [llamacpp]
+    container_name: odelia-llamacpp-server
+    volumes:
+      - ./volumes/models:/models:ro
+    ports:
+      - '8090:8090'
+    networks:
+      - odelia-network
+    restart: unless-stopped
+    command:
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8090"
+      - -m
+      - /models/${GGUF_MODEL_FILE:-medgemma-1.5-4b-it-BF16.gguf}
+      - --mmproj
+      - /models/${MMPROJ_FILE:-mmproj-BF16.gguf}
+      - -c
+      - "${LLAMA_CTX_SIZE:-131072}"
+      - -ngl
+      - "${LLAMA_N_GPU_LAYERS:-99}"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   # Grafana for feedback analytics (reads SQLite via plugin)
   grafana:
