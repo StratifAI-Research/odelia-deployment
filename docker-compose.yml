@@ -103,6 +103,7 @@ services:
       - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
       - ./volumes/orthanc-router-mst-db/:/var/lib/orthanc/db/
       - ./orthanc-routing-example/orthanc-router/server.py:/python/server.py
+      - ./orthanc-routing-example/MLIntegration/MST-classification/manifest.json:/etc/orthanc/manifest.json:ro
     restart: unless-stopped
     networks:
       - odelia-network
@@ -146,7 +147,6 @@ services:
       ORTHANC_URL: "http://orthanc-router-mst:8042"
       IMAGE_FOLDER: "/app/mst-service/images"
       MODEL_PATH: "/app/mst-service/mst_model"
-      HF_TOKEN: "HF_TOKEN"
     networks:
       - odelia-network
     ports:
