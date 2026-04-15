@@ -54,11 +54,6 @@ window.config = {
   // Preconfigured AI endpoints
   aiEndpoints: [
     {
-      id: 'default-ai-server',
-      name: 'Classification model',
-      url: 'http://orthanc-router:8042/dicom-web',
-    },
-    {
       id: 'mst-ai',
       name: 'MST AI model',
       url: 'http://orthanc-router-mst:8042/dicom-web',
