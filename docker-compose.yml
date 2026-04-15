@@ -57,40 +57,6 @@ services:
       - ORTHANC_FEEDBACK_DB_DIR=/var/lib/odelia-feedback
       - ORTHANC_FEEDBACK_ENABLE_WAL=1
 
-  # Orthanc Router service (main PACS)
-  orthanc-router:
-    build:
-      context: ./orthanc-routing-example/orthanc-router
-      dockerfile: Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-orthanc-router:${TAG:-latest}
-    hostname: orthanc-router
-    container_name: odelia-orthanc-router
-    volumes:
-      - ./config/orthanc-router.json:/etc/orthanc/orthanc.json:ro
-      - ./volumes/orthanc-router-db/:/var/lib/orthanc/db/
-      - ./orthanc-routing-example/orthanc-router/server.py:/python/server.py
-    restart: unless-stopped
-    networks:
-      - odelia-network
-    ports:
-      - '4242:4242' # DICOM port
-      - '8042:8042' # HTTP port
-    environment:
-      - ORTHANC__NAME=orthanc-router
-      - VERBOSE_ENABLED=true
-      - VERBOSE_STARTUP=true
-      - ORTHANC__PYTHON_SCRIPT=/python/server.py
-      - ORTHANC__PYTHON_VERBOSE=true
-      # Switch between AI models by changing MODEL_BACKEND_URL:
-      # - Breast Cancer: http://breast-cancer-classification:5555
-      # - MST Classifier: http://mst-classifier:5556
-      - MODEL_BACKEND_URL=http://breast-cancer-classification:5555
-      - AI_TEXT=PROCESSED BY AI MODEL
-      - AI_COLOR=blue
-      - AI_NAME=Cancer classification model
-    depends_on:
-      - breast-cancer-classification
-
   # Orthanc Router service for MST AI model
   orthanc-router-mst:
     build:
@@ -119,22 +85,6 @@ services:
       - MODEL_BACKEND_URL=http://mst-classifier:5556
     depends_on:
       - mst-classifier
-
-  # Breast Cancer Classification Model
-  breast-cancer-classification:
-    build:
-      context: ./orthanc-routing-example/MLIntegration
-      dockerfile: breast-cancer-classification/Dockerfile
-    image: ${DOCKER_HUB_USERNAME:-stratifai}/odelia-breast-cancer-classification:${TAG:-latest}
-    container_name: odelia-breast-cancer-classification
-    environment:
-      ORTHANC_URL: "http://orthanc-router:8042"
-      IMAGE_FOLDER: "/app/bc-service/images"
-      MODEL_PATH: "/app/bc-service/models/resnet18_abrv_b=32_split0-0.pth"
-    networks:
-      - odelia-network
-    ports:
-      - '5555:5555'
 
   # MST Classification Model
   mst-classifier:
